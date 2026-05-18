@@ -44,10 +44,10 @@ The philosophy of this fork is simple: keep the firmware fast, stable, and focus
 |---|---|
 | Project | `CPR-vCodex` |
 | Device | `Xteink X4`; `Xteink X3` compatibility reported by users, not personally tested |
-| Current release (CPR-vCodex) build | [`1.3.0.3-cpr-vcodex`](https://github.com/franssjz/cpr-vcodex/releases/tag/1.3.0.3-cpr-vcodex) |
+| Current release (CPR-vCodex) build | [`1.3.0.4-cpr-vcodex`](https://github.com/franssjz/cpr-vcodex/releases/tag/1.3.0.4-cpr-vcodex) |
 | Latest SD font package | [`sd-fonts-m1-b4`](https://github.com/franssjz/cpr-vcodex/releases/tag/sd-fonts-m1-b4) |
 | Changelog | [CHANGELOG.md](./CHANGELOG.md) |
-| Latest release notes | - Added an optional `Move completed books` setting, disabled by default, which moves finished books into `/finished_books` after the reader closes them.<br>- Added `Mark as finished` to the open-book EPUB menu, with confirmation, completion stats, and achievement progress before the optional move.<br>- Kept completed-book moves safe by updating Reading Stats, Recents, Favorites, and KOReader auto-push return paths when the file is renamed.<br>- Exposed the setting in on-device `Settings > Apps > Reading Stats` and in File Transfer web settings.<br>- Restored automatic achievement event persistence and polished Spanish/Catalan UI translations. |
+| Latest release notes | - Improved default EPUB text rendering so normal reading uses fuller, smoother glyphs without requiring users to tune advanced settings.<br>- Regenerated the bundled reader fonts, including Bookerly, with darker anti-aliased edge pixels for cleaner e-ink text.<br>- Kept `Extra Dark` available while making the normal mode the best default reading experience, and renamed the legacy black-and-white style to `Crisp` / `Nítido` in the UI.<br>- Hardened the anti-aliased page-render path so failed BW-buffer backups no longer leave mixed grayscale/opacity artifacts when turning pages or opening reader menus.<br>- Sped up EPUB page preparation by prewarming font glyph usage directly from page text instead of doing an extra full render pass.<br>- Preserved real carousel progress for completed books and fixed resume handling for saved EPUB positions in spine index `0`, integrating PR #54. |
 | Base firmware line | `CrossPoint Reader 1.3.0` |
 | Latest official commit reviewed | [`0af0ad5`](https://github.com/crosspoint-reader/crosspoint-reader/commit/0af0ad5) |
 | Latest official commit incorporated | Selected 1.3.0 reader, SDK, font-manager, SD-font rendering, hyphenation, and tooling updates through [`0af0ad5`](https://github.com/crosspoint-reader/crosspoint-reader/commit/0af0ad5) |
@@ -499,7 +499,7 @@ Each packaged dev build now keeps the base firmware line and the local flash ide
 Practical values to look at:
 
 - base firmware line: `CrossPoint Reader 1.3.0`
-- current dev build style: `1.3.0.3-cpr-vcodex`
+- current release build style: `1.3.0.4-cpr-vcodex`
 - packaged artifact style: `artifacts/<version>-cpr-vcodex.bin`
 
 The incremental `.bNNNN` suffix exists specifically to help distinguish newer flashes from older ones on real hardware.
@@ -569,10 +569,10 @@ Release publishing:
 - before tagging, run:
 
 ```powershell
-python scripts/pre_release_check.py --tag 1.3.0.3-cpr-vcodex
+python scripts/pre_release_check.py --tag 1.3.0.4-cpr-vcodex
 ```
 
-- push a stable tag named like `1.3.0.3-cpr-vcodex`
+- push a stable tag named like `1.3.0.4-cpr-vcodex`
 - the release workflow builds `gh_release`, validates that the packaged artifact
   name matches the tag, and attaches only the flashable `<tag>.bin` to the GitHub Release
 - tagged CI release builds derive the firmware release number from the tag, not
