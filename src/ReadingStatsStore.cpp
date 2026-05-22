@@ -5,6 +5,7 @@
 #include <HalStorage.h>
 #include <JsonSettingsIO.h>
 #include <Logging.h>
+#include <esp_heap_caps.h>
 
 #include <algorithm>
 #include <ctime>
@@ -1115,6 +1116,52 @@ bool ReadingStatsStore::loadFromFile() {
       dirty = false;
       lastSaveMs = millis();
     }
+  }
+  return loaded;
+}
+
+bool ReadingStatsStore::releaseMemoryForNetwork() {
+  LOG_DBG("RST", "Before network release: free=%u largest=%u", ESP.getFreeHeap(),
+          heap_caps_get_largest_free_block(MALLOC_CAP_8BIT | MALLOC_CAP_DEFAULT));
+
+  if (activeSession.active) {
+    endSession();
+  }
+
+  if (dirty && !saveToFile()) {
+    LOG_ERR("RST", "Failed to save reading stats before network memory release");
+    return false;
+  }
+
+  books.clear();
+  books.shrink_to_fit();
+  legacyReadingDays.clear();
+  legacyReadingDays.shrink_to_fit();
+  readingDays.clear();
+  readingDays.shrink_to_fit();
+  sessionLog.clear();
+  sessionLog.shrink_to_fit();
+
+  activeSession = {};
+  lastSessionSnapshot = {};
+  sessionSerialCounter = 0;
+  invalidateSummaryCache();
+  dirty = false;
+  lastSaveMs = millis();
+
+  LOG_DBG("RST", "After network release: free=%u largest=%u", ESP.getFreeHeap(),
+          heap_caps_get_largest_free_block(MALLOC_CAP_8BIT | MALLOC_CAP_DEFAULT));
+  return true;
+}
+
+bool ReadingStatsStore::reloadAfterNetwork() {
+  if (!Storage.exists(READING_STATS_FILE_JSON)) {
+    return true;
+  }
+
+  const bool loaded = loadFromFile();
+  if (!loaded) {
+    LOG_ERR("RST", "Failed to reload reading stats after network operation");
   }
   return loaded;
 }

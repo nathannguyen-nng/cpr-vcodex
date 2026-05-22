@@ -8,7 +8,10 @@
 #include <WiFi.h>
 #include <esp_rom_crc.h>
 
+#include <algorithm>
+
 #include "MappedInputManager.h"
+#include "ReadingStatsStore.h"
 #include "SdCardFontGlobals.h"
 #include "activities/network/WifiSelectionActivity.h"
 #include "activities/util/ConfirmationActivity.h"
@@ -22,6 +25,10 @@ FontDownloadActivity::FontDownloadActivity(GfxRenderer& renderer, MappedInputMan
 namespace {
 constexpr int DOWNLOAD_ATTEMPTS = 3;
 constexpr uint32_t RETRY_DELAY_MS = 350;
+constexpr uint32_t PROGRESS_INPUT_POLL_MS = 150;
+constexpr uint32_t PROGRESS_RENDER_INTERVAL_MS = 1200;
+constexpr size_t PROGRESS_RENDER_STEP_BYTES = 64 * 1024;
+constexpr uint8_t PROGRESS_RENDER_STEP_PERCENT = 5;
 
 HttpDownloader::DownloadError downloadToFileWithRetries(const std::string& url, const char* destPath,
                                                         HttpDownloader::ProgressCallback progress = nullptr) {
@@ -44,6 +51,7 @@ HttpDownloader::DownloadError downloadToFileWithRetries(const std::string& url, 
 
 void FontDownloadActivity::onEnter() {
   Activity::onEnter();
+  readingStatsReleasedForNetwork_ = READING_STATS.releaseMemoryForNetwork();
   WiFi.mode(WIFI_STA);
   startActivityForResult(std::make_unique<WifiSelectionActivity>(renderer, mappedInput),
                          [this](const ActivityResult& result) { onWifiSelectionComplete(!result.isCancelled); });
@@ -56,6 +64,21 @@ void FontDownloadActivity::onExit() {
   delay(100);
   WiFi.mode(WIFI_OFF);
   delay(100);
+
+  if (readingStatsReleasedForNetwork_) {
+    releaseManifestMemory();
+    READING_STATS.reloadAfterNetwork();
+    readingStatsReleasedForNetwork_ = false;
+  }
+}
+
+void FontDownloadActivity::releaseManifestMemory() {
+  baseUrl_.clear();
+  baseUrl_.shrink_to_fit();
+  families_.clear();
+  families_.shrink_to_fit();
+  errorMessage_.clear();
+  errorMessage_.shrink_to_fit();
 }
 
 void FontDownloadActivity::onWifiSelectionComplete(const bool success) {
@@ -219,6 +242,7 @@ void FontDownloadActivity::downloadAll() {
     RenderLock lock(*this);
     state_ = COMPLETE;
   }
+  renderer.requestNextRefresh(HalDisplay::HALF_REFRESH);
 }
 
 void FontDownloadActivity::updateAll() {
@@ -341,17 +365,43 @@ void FontDownloadActivity::downloadFamily(ManifestFamily& family) {
       }
       requestUpdate(true);
 
+      unsigned long lastInputPollMs = 0;
+      unsigned long lastProgressRenderMs = 0;
+      size_t lastRenderedBytes = 0;
+      uint8_t lastRenderedPercent = 0;
+
       auto result = HttpDownloader::downloadToFile(
           url, destPath,
-          [this](size_t downloaded, size_t total) {
+          [this, &lastInputPollMs, &lastProgressRenderMs, &lastRenderedBytes, &lastRenderedPercent](size_t downloaded,
+                                                                                                    size_t total) {
             fileProgress_ = downloaded;
             fileTotal_ = total;
-            mappedInput.update();
-            if (mappedInput.isPressed(MappedInputManager::Button::Back) ||
-                mappedInput.wasPressed(MappedInputManager::Button::Back)) {
-              cancelRequested_ = true;
+
+            const unsigned long now = millis();
+            if (now - lastInputPollMs >= PROGRESS_INPUT_POLL_MS) {
+              lastInputPollMs = now;
+              mappedInput.update();
+              if (mappedInput.isPressed(MappedInputManager::Button::Back) ||
+                  mappedInput.wasPressed(MappedInputManager::Button::Back)) {
+                cancelRequested_ = true;
+              }
             }
-            requestUpdate(true);
+
+            uint8_t percent = 0;
+            if (total > 0) {
+              percent = static_cast<uint8_t>(std::min<size_t>(100, (downloaded * 100) / total));
+            }
+
+            const bool completed = total > 0 && downloaded >= total;
+            const bool byteStep = downloaded >= lastRenderedBytes + PROGRESS_RENDER_STEP_BYTES;
+            const bool percentStep = total > 0 && percent >= lastRenderedPercent + PROGRESS_RENDER_STEP_PERCENT;
+            const bool timeStep = now - lastProgressRenderMs >= PROGRESS_RENDER_INTERVAL_MS;
+            if (completed || byteStep || percentStep || timeStep) {
+              lastRenderedBytes = downloaded;
+              lastRenderedPercent = percent;
+              lastProgressRenderMs = now;
+              requestUpdate(true);
+            }
           },
           &cancelRequested_);
 
@@ -690,5 +740,5 @@ void FontDownloadActivity::render(RenderLock&&) {
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   }
 
-  renderer.displayBuffer();
+  renderer.displayBuffer(state_ == COMPLETE || state_ == ERROR ? HalDisplay::HALF_REFRESH : HalDisplay::FAST_REFRESH);
 }

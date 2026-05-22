@@ -86,6 +86,7 @@ class FontDownloadActivity : public Activity {
   int downloadingFamilyIndex_ = -1;
   std::string errorMessage_;
   bool cancelRequested_ = false;
+  bool readingStatsReleasedForNetwork_ = false;
 
   void onWifiSelectionComplete(bool success);
   bool fetchAndParseManifest();
@@ -101,6 +102,7 @@ class FontDownloadActivity : public Activity {
   bool isSelectedFamilyDeletable() const;
   void promptDeleteSelectedFamily();
   void onDeleteConfirmationResult(const ActivityResult& result);
+  void releaseManifestMemory();
   int familyIndexFromList(int listIndex) const { return listIndex - specialRowCount(); }
   int listItemCount() const;
   size_t totalDownloadSize() const;

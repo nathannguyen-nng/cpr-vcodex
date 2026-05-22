@@ -173,6 +173,8 @@ class ReadingStatsStore {
   bool importFromFile(const std::string& path);
   bool saveToFile() const;
   bool loadFromFile();
+  bool releaseMemoryForNetwork();
+  bool reloadAfterNetwork();
 };
 
 #define READING_STATS ReadingStatsStore::getInstance()
