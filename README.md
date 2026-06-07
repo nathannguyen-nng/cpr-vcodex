@@ -64,6 +64,8 @@ The philosophy of this fork is simple: keep the firmware fast, stable, and focus
 
 `CPR-vCodex` supports extra `.cpfont` families stored on the microSD card. The built-in reader fonts still work as usual, and downloaded SD fonts appear in `Settings > Reader > Font Family` after the firmware discovers them.
 
+SD-card font rendering keeps a fast per-glyph advance cache when it is complete, and falls back to direct glyph measurement when an external font cache is missing an entry. Browser File Transfer downloads also preserve the advertised response size so downloaded files do not fail with content-length mismatch errors.
+
 Device download:
 
 1. Connect the reader to Wi-Fi.

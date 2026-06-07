@@ -1027,23 +1027,13 @@ bool SdCardFont::hasAdvanceTable() const {
 
 uint16_t SdCardFont::getAdvance(uint32_t codepoint, uint8_t style) const {
   style &= (MAX_STYLES - 1);
-  if (!advanceTable_[style]) return 0;
-  const AdvanceEntry* table = advanceTable_[style];
-  const uint32_t size = advanceTableSize_[style];
-  // Binary search sorted by codepoint
-  uint32_t lo = 0, hi = size;
-  while (lo < hi) {
-    uint32_t mid = lo + (hi - lo) / 2;
-    if (table[mid].codepoint < codepoint) {
-      lo = mid + 1;
-    } else {
-      hi = mid;
-    }
-  }
-  if (lo < size && table[lo].codepoint == codepoint) {
-    return table[lo].advanceX;
-  }
-  return 0;
+  uint16_t advance = 0;
+  return advanceTableLookup(style, codepoint, &advance) ? advance : 0;
+}
+
+bool SdCardFont::getAdvance(uint32_t codepoint, uint8_t style, uint16_t* outAdvance) const {
+  style &= (MAX_STYLES - 1);
+  return advanceTableLookup(style, codepoint, outAdvance);
 }
 
 int SdCardFont::buildAdvanceTable(const char* utf8Text, uint8_t styleMask) {

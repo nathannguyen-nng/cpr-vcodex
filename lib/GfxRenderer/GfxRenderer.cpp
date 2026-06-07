@@ -1389,7 +1389,10 @@ int GfxRenderer::getSpaceWidth(const int fontId, const EpdFontFamily::Style styl
   auto sdIt = sdCardFonts_.find(fontId);
   if (sdIt != sdCardFonts_.end() && sdIt->second->hasAdvanceTable()) {
     const uint8_t resolvedStyle = resolveSdCardStyle(*sdIt->second, style);
-    return fp4::toPixel(sdIt->second->getAdvance(' ', resolvedStyle));
+    uint16_t advance = 0;
+    if (sdIt->second->getAdvance(' ', resolvedStyle, &advance)) {
+      return fp4::toPixel(advance);
+    }
   }
 
   const auto fontIt = fontMap.find(fontId);
@@ -1407,7 +1410,10 @@ int GfxRenderer::getSpaceAdvance(const int fontId, const uint32_t leftCp, const 
   auto sdIt = sdCardFonts_.find(fontId);
   if (sdIt != sdCardFonts_.end() && sdIt->second->hasAdvanceTable()) {
     const uint8_t resolvedStyle = resolveSdCardStyle(*sdIt->second, style);
-    return fp4::toPixel(sdIt->second->getAdvance(' ', resolvedStyle));
+    uint16_t advance = 0;
+    if (sdIt->second->getAdvance(' ', resolvedStyle, &advance)) {
+      return fp4::toPixel(advance);
+    }
   }
 
   const auto fontIt = fontMap.find(fontId);
@@ -1436,11 +1442,20 @@ int GfxRenderer::getTextAdvanceX(const int fontId, const char* text, EpdFontFami
     int32_t widthFP = 0;
     const bool isSupSub = (style & (EpdFontFamily::SUP | EpdFontFamily::SUB)) != 0;
     const uint8_t styleIdx = resolveSdCardStyle(*sdIt->second, style);
-    while (uint32_t cp = utf8NextCodepoint(reinterpret_cast<const uint8_t**>(&text))) {
-      int32_t advFP = sdIt->second->getAdvance(cp, styleIdx);
+    const char* scan = text;
+    bool complete = true;
+    while (uint32_t cp = utf8NextCodepoint(reinterpret_cast<const uint8_t**>(&scan))) {
+      uint16_t advance = 0;
+      if (!sdIt->second->getAdvance(cp, styleIdx, &advance)) {
+        complete = false;
+        break;
+      }
+      int32_t advFP = advance;
       widthFP += isSupSub ? (advFP + 1) / 2 : advFP;
     }
-    return fp4::toPixel(widthFP);
+    if (complete) {
+      return fp4::toPixel(widthFP);
+    }
   }
 
   const auto fontIt = fontMap.find(fontId);

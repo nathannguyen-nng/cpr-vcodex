@@ -1196,12 +1196,17 @@ void CrossPointWebServer::handleDownload() const {
     filename = nameBuf;
   }
 
-  server->setContentLength(file.size());
+  const size_t fileSize = file.size();
   server->sendHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
+  server->setContentLength(fileSize);
   server->send(200, contentType.c_str(), "");
 
-  NetworkClient client = server->client();
-  client.write(file);
+  file.seekSet(0);
+  const size_t sent = server->client().write(file);
+  if (sent != fileSize) {
+    LOG_ERR("WEB", "Download size mismatch for %s: sent %u of %u bytes", itemPath.c_str(), (unsigned)sent,
+            (unsigned)fileSize);
+  }
   file.close();
 }
 
