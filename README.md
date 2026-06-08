@@ -47,12 +47,12 @@ The philosophy of this fork is simple: keep the firmware fast, stable, and focus
 |---|---|
 | Project | `CPR-vCodex` |
 | Device | `Xteink X4`; `Xteink X3` compatibility reported by users, not personally tested |
-| Current release (CPR-vCodex) build | [`1.3.0.18-cpr-vcodex`](https://github.com/franssjz/cpr-vcodex/releases/tag/1.3.0.18-cpr-vcodex) |
+| Current release (CPR-vCodex) build | [`1.3.0.19-cpr-vcodex`](https://github.com/franssjz/cpr-vcodex/releases/tag/1.3.0.19-cpr-vcodex) |
 | Latest SD font package | [`sd-fonts-m1-b4`](https://github.com/franssjz/cpr-vcodex/releases/tag/sd-fonts-m1-b4) |
 | Changelog | [CHANGELOG.md](./CHANGELOG.md) |
 | Current release sync | Selected CrossPoint Reader fixes after [`3392b3e3`](https://github.com/crosspoint-reader/crosspoint-reader/commit/3392b3e3) through [`fd5b8078`](https://github.com/crosspoint-reader/crosspoint-reader/commit/fd5b8078), including EPUB image/cache/CSS/parser performance, KOReader chapter-start mapping, font-upload hardening, long-press chapter-start navigation, progress-bar placement, and `open-x4-sdk` [`26648d6`](https://github.com/crosspoint-reader/community-sdk/commit/26648d643a1c883ab2f71e1869d05fe2a0c9d498). Hebrew/RTL, translation-only churn, OpenDyslexic storage migration, docs-only guide updates, and t5s3 README-only changes remain deferred. |
-| Current release fixes | Adds SD-card StarDict dictionary support with selectable dictionary folders, in-reader word lookup, lookup history, suggestions, and a floating paged definition overlay. |
-| Latest release notes | - Added the `Dictionary` app for selecting StarDict dictionaries stored under `/dictionaries/<language>/` on the SD card.<br>- Added EPUB reader menu actions for `Look up word`, `Lookup history`, and opening the Dictionary app without losing the current book session.<br>- Added word-selection navigation, rounded word highlights, suggestion fallback, and a 75% definition popup with pagination and dark-mode support.<br>- Added configurable definition text size, cleanable/capped lookup history, generated `.cpridx` lookup caches, optional `.syn` synonym support, and improved definition cleanup/formatting.<br>- Documented the required StarDict `.ifo`, `.idx`, and uncompressed `.dict` files, `.dict.dz` extraction, first-activation cache time, and dictionary download sources. |
+| Current release fixes | Restores reliable web portal downloads for books, screenshots, and other SD-card files by streaming downloads in checked chunks. |
+| Latest release notes | - Fixed web portal downloads failing with browser `Content length mismatch` errors.<br>- Restored downloading books, screenshots, and other SD-card files from the File Transfer web portal.<br>- Replaced the single file-to-socket write path with checked chunked streaming, watchdog resets, and small write retries for more reliable transfers on-device.<br>- Kept the SD-card font rendering fix from `1.3.0.16` unchanged. |
 | Base firmware line | `CrossPoint Reader 1.3.0` |
 | Latest official commit reviewed | [`fd5b8078`](https://github.com/crosspoint-reader/crosspoint-reader/commit/fd5b8078) |
 | Latest official commit incorporated | Selected EPUB/rendering, cache, filesystem, image, KOReader Sync, font-upload, SDK, and navigation fixes from [`7accc607`](https://github.com/crosspoint-reader/crosspoint-reader/commit/7accc607) through [`fd5b8078`](https://github.com/crosspoint-reader/crosspoint-reader/commit/fd5b8078); larger upstream bookmark, RTL, OTA/downloader, translation-bulk, and settings rewrites remain intentionally deferred. |
@@ -582,7 +582,7 @@ Each packaged dev build now keeps the base firmware line and the local flash ide
 Practical values to look at:
 
 - base firmware line: `CrossPoint Reader 1.3.0`
-- current release build style: `1.3.0.18-cpr-vcodex`
+- current release build style: `1.3.0.19-cpr-vcodex`
 - packaged artifact style: `artifacts/<version>-cpr-vcodex.bin`
 
 The incremental `.bNNNN` suffix exists specifically to help distinguish newer flashes from older ones on real hardware.
@@ -652,10 +652,10 @@ Release publishing:
 - before tagging, run:
 
 ```powershell
-python scripts/pre_release_check.py --tag 1.3.0.18-cpr-vcodex
+python scripts/pre_release_check.py --tag 1.3.0.19-cpr-vcodex
 ```
 
-- push a stable tag named like `1.3.0.18-cpr-vcodex`
+- push a stable tag named like `1.3.0.19-cpr-vcodex`
 - the release workflow builds `gh_release`, validates that the packaged artifact
   name matches the tag, and attaches only the flashable `<tag>.bin` to the GitHub Release
 - tagged CI release builds derive the firmware release number from the tag, not
