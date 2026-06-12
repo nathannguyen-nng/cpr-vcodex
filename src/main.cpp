@@ -644,7 +644,7 @@ void loop() {
     SETTINGS.saveToFile();
     renderer.setDarkMode(SETTINGS.darkMode);
     renderer.requestNextFullRefresh();
-    activityManager.requestUpdate();
+    activityManager.requestUpdateAndWait();
     LOG_DBG("MAIN", "Dark mode toggled: %u", SETTINGS.darkMode);
   }
 
