@@ -42,6 +42,10 @@
 // Internal constants
 namespace {
 constexpr int hPaddingInSelection = 8;
+// Horizontal padding inside each settings tab. Kept smaller than
+// hPaddingInSelection so all five tab labels fit across the 480px bar with the
+// (wider) Inter UI font; at 8px the labels overflowed and lost their last glyph.
+constexpr int tabHPadding = 5;
 constexpr int cornerRadius = 6;
 constexpr int topHintButtonY = 345;
 constexpr int popupMarginX = 16;
@@ -376,7 +380,7 @@ void LyraTheme::drawTabBar(const GfxRenderer& renderer, Rect rect, const std::ve
 
   const int availableWidth = std::max(0, rect.width - LyraMetrics::values.contentSidePadding * 2);
   const int totalGapWidth = LyraMetrics::values.tabSpacing * std::max(0, tabCount - 1);
-  const int totalPaddingWidth = 2 * hPaddingInSelection * tabCount;
+  const int totalPaddingWidth = 2 * tabHPadding * tabCount;
   const std::vector<int> textWidths =
       allocateTabTextWidths(desiredWidths, availableWidth - totalGapWidth - totalPaddingWidth);
 
@@ -397,22 +401,22 @@ void LyraTheme::drawTabBar(const GfxRenderer& renderer, Rect rect, const std::ve
 
     if (tab.selected) {
       if (selected) {
-        renderer.fillRoundedRect(currentX, rect.y + 1, textWidth + 2 * hPaddingInSelection, rect.height - 4,
+        renderer.fillRoundedRect(currentX, rect.y + 1, textWidth + 2 * tabHPadding, rect.height - 4,
                                  cornerRadius, Color::Black);
       } else {
-        renderer.fillRectDither(currentX, rect.y, textWidth + 2 * hPaddingInSelection, rect.height - 3,
+        renderer.fillRectDither(currentX, rect.y, textWidth + 2 * tabHPadding, rect.height - 3,
                                 Color::LightGray);
-        renderer.drawLine(currentX, rect.y + rect.height - 3, currentX + textWidth + 2 * hPaddingInSelection,
+        renderer.drawLine(currentX, rect.y + rect.height - 3, currentX + textWidth + 2 * tabHPadding,
                           rect.y + rect.height - 3, 2, true);
       }
     }
 
     if (!label.empty()) {
-      renderer.drawText(fontId, currentX + hPaddingInSelection, rect.y + (tab.compact ? 8 : 6), label.c_str(),
+      renderer.drawText(fontId, currentX + tabHPadding, rect.y + (tab.compact ? 8 : 6), label.c_str(),
                         !(tab.selected && selected), EpdFontFamily::REGULAR);
     }
 
-    currentX += textWidth + 2 * hPaddingInSelection;
+    currentX += textWidth + 2 * tabHPadding;
     if (i < tabCount - 1) {
       currentX += LyraMetrics::values.tabSpacing;
     }
